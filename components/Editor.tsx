@@ -11,7 +11,8 @@ import {
   Sparkles,
   Download,
   Save,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 
 interface EditorProps {
@@ -23,7 +24,9 @@ interface EditorProps {
 
 const Editor: React.FC<EditorProps> = ({ theme, onChange, onSave, onExport }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingWallpaper, setIsGeneratingWallpaper] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
+  const [wallpaperPrompt, setWallpaperPrompt] = useState('');
   const [activeTab, setActiveTab] = useState<'colors' | 'typo' | 'icons' | 'ai'>('colors');
 
   const handleAI = async () => {
@@ -37,6 +40,20 @@ const Editor: React.FC<EditorProps> = ({ theme, onChange, onSave, onExport }) =>
       alert("AI failed to generate theme. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateWallpaper = async () => {
+    if (!wallpaperPrompt.trim()) return;
+    setIsGeneratingWallpaper(true);
+    try {
+      const imageUrl = await themeAIService.generateWallpaper(wallpaperPrompt);
+      onChange({ wallpaperUrl: imageUrl });
+      setWallpaperPrompt('');
+    } catch (e) {
+      alert("AI failed to generate wallpaper. Please try again.");
+    } finally {
+      setIsGeneratingWallpaper(false);
     }
   };
 
@@ -91,12 +108,10 @@ const Editor: React.FC<EditorProps> = ({ theme, onChange, onSave, onExport }) =>
                   <div className="flex items-center gap-2 bg-zinc-800 p-2 rounded-lg border border-zinc-700">
                     <input 
                       type="color" 
-                      // Fixed: cast value to string to resolve unknown type issues
                       value={value as string} 
                       onChange={(e) => updateColor(key as any, e.target.value)}
                       className="w-8 h-8 rounded border-none cursor-pointer bg-transparent"
                     />
-                    {/* Fixed: cast value to string to ensure toUpperCase() is available on the type */}
                     <span className="text-xs font-mono text-zinc-400">{(value as string).toUpperCase()}</span>
                   </div>
                 </div>
@@ -192,30 +207,67 @@ const Editor: React.FC<EditorProps> = ({ theme, onChange, onSave, onExport }) =>
         )}
 
         {activeTab === 'ai' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">AI Theme Designer</h2>
-            <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-4">
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Describe the vibe you want for your theme. Our AI will automatically configure colors, fonts, and assets.
-              </p>
-              <textarea
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="e.g., A futuristic cyberpunk city theme with neon pink and cyan accents..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-200 h-24 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
-              />
-              <button
-                disabled={isGenerating || !aiPrompt.trim()}
-                onClick={handleAI}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-lg font-bold text-sm transition-all"
-              >
-                {isGenerating ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <Sparkles size={18} />
-                )}
-                {isGenerating ? 'Generating Design...' : 'Generate Theme'}
-              </button>
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Theme Generator */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                <Sparkles size={16} className="text-indigo-400" />
+                AI Theme Designer
+              </h2>
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-4">
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Describe the full vibe (colors, fonts, style). Our AI will build the entire theme configuration for you.
+                </p>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="e.g., A futuristic cyberpunk city theme with neon pink and cyan accents..."
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-200 h-24 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
+                />
+                <button
+                  disabled={isGenerating || !aiPrompt.trim()}
+                  onClick={handleAI}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-indigo-600/10"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    <Sparkles size={18} />
+                  )}
+                  {isGenerating ? 'Generating Design...' : 'Generate Full Theme'}
+                </button>
+              </div>
+            </div>
+
+            {/* Wallpaper Generator */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
+                <ImageIcon size={16} className="text-teal-400" />
+                AI Wallpaper Generator
+              </h2>
+              <div className="p-4 bg-teal-500/10 border border-teal-500/20 rounded-xl space-y-4">
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Generate a custom image for your home screen.
+                </p>
+                <textarea
+                  value={wallpaperPrompt}
+                  onChange={(e) => setWallpaperPrompt(e.target.value)}
+                  placeholder="e.g., Abstract 3D geometric shapes with soft purple lighting..."
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-200 h-20 focus:ring-1 focus:ring-teal-500 outline-none resize-none"
+                />
+                <button
+                  disabled={isGeneratingWallpaper || !wallpaperPrompt.trim()}
+                  onClick={handleGenerateWallpaper}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-teal-600/10"
+                >
+                  {isGeneratingWallpaper ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    <Wand2 size={18} />
+                  )}
+                  {isGeneratingWallpaper ? 'Creating Artwork...' : 'Generate Wallpaper'}
+                </button>
+              </div>
             </div>
           </div>
         )}
