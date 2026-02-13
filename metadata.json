@@ -1,0 +1,7 @@
+{
+  "name": "Theme Maker Studio",
+  "description": "A high-end professional suite for designing, previewing, and exporting custom mobile themes with AI-assisted generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
